@@ -1,0 +1,3 @@
+version: "3.9"
+services:
+  # On ajoutera scraper, kafka, postgres, hadoop ici plus tard
