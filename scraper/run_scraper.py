@@ -2,8 +2,7 @@ from scraper import sword_master, gunner, bows
 import pandas as pd
 from kafka import KafkaProducer
 import json
-
-
+from concurrent.futures import ThreadPoolExecutor
 
 # ================================
 # URLs centralisées
@@ -80,14 +79,25 @@ def create_producer():
 
 producer = create_producer()
 
+# ================================
+# Configuration du chunk
+# ================================
+CHUNK_SIZE = 10000
+executor = ThreadPoolExecutor(max_workers=4)  # 4 threads pour envoyer les chunks
 
+def process_chunk_parallel(chunk):
+    """Envoie un chunk à Kafka dans un thread séparé."""
+    print(f"💾 Traitement d'un chunk de {len(chunk)} armes")
+    for weapon in chunk:
+        producer.send('jeux', value=weapon)
+    producer.flush()
 
 # ================================
 # Fonction principale
 # ================================
 def run_all_scrapers():
-    all_data = []
     total_weapons = 0
+    chunk = []
 
     for weapon_name, urls in URLS.items():
         print(f"\n=== Scraping {weapon_name} ===")
@@ -101,25 +111,27 @@ def run_all_scrapers():
 
         for url in urls:
             data = scraper_func(url, weapon_name)
-            all_data.extend(data)
             total_weapons += len(data)
 
-            # ================================
-            # Envoyer chaque arme à Kafka
-            # ================================
+            # Ajouter chaque arme au chunk
             for weapon in data:
-                producer.send('jeux', value=weapon)
-            producer.flush()
+                chunk.append(weapon)
+                if len(chunk) >= CHUNK_SIZE:
+                    # Envoyer le chunk en parallèle
+                    executor.submit(process_chunk_parallel, chunk.copy())
+                    chunk = []
+
+    # Traiter le dernier chunk restant
+    if chunk:
+        executor.submit(process_chunk_parallel, chunk.copy())
+
+    # Attendre la fin de tous les threads
+    executor.shutdown(wait=True)
 
     print(f"\n✅ Total d’armes collectées : {total_weapons}")
-    return all_data
 
 # ================================
 # Lancement
 # ================================
 if __name__ == "__main__":
-    results = run_all_scrapers()
-    df = pd.DataFrame(results)
-    print("\nAperçu du dataset complet :")
-    print(df.head())
-
+    run_all_scrapers()
