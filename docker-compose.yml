@@ -15,7 +15,6 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      # 👇 Ligne clé : génération automatique d’un cluster.id
       KAFKA_CLUSTER_ID: "b4U_ZKavQ9Shv1yaHjKQ2w"
     ports:
       - "9092:9092"
@@ -31,14 +30,16 @@ services:
       sleep 10 &&
       python run_scraper.py
       "
+
+
   postgres:
     image: postgres:16
     container_name: postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: test_cranaruge
+      POSTGRES_USER: postgresuser
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: postgresdb
     ports:
       - "5432:5432"
     volumes:
