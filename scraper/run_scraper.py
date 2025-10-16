@@ -1,8 +1,11 @@
 from scraper import sword_master, gunner, bows
-import pandas as pd
 from kafka import KafkaProducer
 import json
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+
+
+
 
 # ================================
 # URLs centralisées
@@ -61,10 +64,13 @@ URLS = {
 }
 
 
+
+
+
+
 # ================================
 # Connexion au broker Kafka
 # ================================
-# Attente/reconnexion Kafka
 def create_producer():
     while True:
         try:
@@ -72,66 +78,84 @@ def create_producer():
                 bootstrap_servers='kafka:9092',
                 value_serializer=lambda v: json.dumps(v).encode('utf-8')
             )
-            print("✅ Connecté à Kafka")
+            print("Connecté à Kafka")
             return producer
         except Exception as e:
-            print("⚠️ Kafka non disponible, nouvelle tentative dans 3s...", e)
+            print("Kafka non disponible, nouvelle tentative dans 3s...", e)
 
 producer = create_producer()
 
 # ================================
 # Configuration du chunk
 # ================================
-CHUNK_SIZE = 10000
-executor = ThreadPoolExecutor(max_workers=4)  # 4 threads pour envoyer les chunks
 
-def process_chunk_parallel(chunk):
-    """Envoie un chunk à Kafka dans un thread séparé."""
-    print(f"💾 Traitement d'un chunk de {len(chunk)} armes")
-    for weapon in chunk:
+CHUNK_SIZE = 10000
+chunk_lock = Lock()  # Lock pour sécuriser l'accès au chunk global
+chunk = []
+
+executor_kafka = ThreadPoolExecutor(max_workers=4)  # Pour l'envoi des chunks
+
+def process_chunk_parallel(chunk_to_send):
+    print(f"Traitement d'un chunk de {len(chunk_to_send)} armes")
+    for weapon in chunk_to_send:
         producer.send('jeux', value=weapon)
     producer.flush()
+
+
+
+
+# ================================
+# Fonction de scraping thread-safe
+# ================================
+
+def scrape_and_chunk(scraper_func, url, weapon_name):
+    global chunk
+    data = scraper_func(url, weapon_name)
+    with chunk_lock:
+        for weapon in data:
+            chunk.append(weapon)
+            if len(chunk) >= CHUNK_SIZE:
+                # Copier et envoyer en parallèle
+                executor_kafka.submit(process_chunk_parallel, chunk.copy())
+                chunk = []
+
+
+
 
 # ================================
 # Fonction principale
 # ================================
-def run_all_scrapers():
+
+def run_all_scrapers_parallel():
     total_weapons = 0
-    chunk = []
+    futures = []
 
-    for weapon_name, urls in URLS.items():
-        print(f"\n=== Scraping {weapon_name} ===")
+    with ThreadPoolExecutor(max_workers=4) as scrape_executor: 
+        for weapon_name, urls in URLS.items():
+            if weapon_name in ["Light_Bowgun", "Heavy_Bowgun"]:
+                scraper_func = gunner
+            elif weapon_name == "Bows":
+                scraper_func = bows
+            else:
+                scraper_func = sword_master
 
-        if weapon_name in ["Light_Bowgun", "Heavy_Bowgun"]:
-            scraper_func = gunner
-        elif weapon_name == "Bows":
-            scraper_func = bows
-        else:
-            scraper_func = sword_master
+            for url in urls:
+                futures.append(scrape_executor.submit(scrape_and_chunk, scraper_func, url, weapon_name))
 
-        for url in urls:
-            data = scraper_func(url, weapon_name)
-            total_weapons += len(data)
-
-            # Ajouter chaque arme au chunk
-            for weapon in data:
-                chunk.append(weapon)
-                if len(chunk) >= CHUNK_SIZE:
-                    # Envoyer le chunk en parallèle
-                    executor.submit(process_chunk_parallel, chunk.copy())
-                    chunk = []
+        for future in as_completed(futures):
+            total_weapons += len(future.result() or [])
 
     # Traiter le dernier chunk restant
-    if chunk:
-        executor.submit(process_chunk_parallel, chunk.copy())
+    with chunk_lock:
+        if chunk:
+            executor_kafka.submit(process_chunk_parallel, chunk.copy())
+            chunk.clear()
 
-    # Attendre la fin de tous les threads
-    executor.shutdown(wait=True)
-
+    executor_kafka.shutdown(wait=True)
     print(f"\n✅ Total d’armes collectées : {total_weapons}")
 
 # ================================
 # Lancement
 # ================================
 if __name__ == "__main__":
-    run_all_scrapers()
+    run_all_scrapers_parallel()
