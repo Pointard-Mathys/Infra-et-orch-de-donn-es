@@ -14,7 +14,7 @@ def scrape_weapons(url, weapon_type, columns_specific):
 
     table = soup.find('table')
     if not table:
-        print("⚠️  Aucune table trouvée sur la page.")
+        print("Aucune table trouvée sur la page.")
         return []
 
     rows = table.find_all('tr')
@@ -69,7 +69,7 @@ def scrape_weapons(url, weapon_type, columns_specific):
         result.update(extracted)
         results.append(result)
 
-    print(f"✅ {len(results)} armes trouvées pour {weapon_type}")
+    print(f"{len(results)} armes trouvées pour {weapon_type}")
     return results
 
 
@@ -77,13 +77,13 @@ def scrape_weapons(url, weapon_type, columns_specific):
 # Fonctions pour chaque type d’arme
 # ================================
 def sword_master(url, weapon_type):
-    columns = ["sharpness", "slots", "rank", "price", "creation_mats", "upgrade_mats", "description"]
+    columns = ["sharpness", "slots", "rank", "price", "creation_mats", "upgrade_mats"]
     return scrape_weapons(url, weapon_type, columns)
 
 def gunner(url, weapon_type):
-    columns = ["reload_recoil_bullet_speed", "ammo", "slots", "rank", "price", "creation_mats", "upgrade_mats", "description"]
+    columns = ["reload_recoil_bullet_speed", "ammo", "slots", "rank", "price", "creation_mats", "upgrade_mats"]
     return scrape_weapons(url, weapon_type, columns)
 
 def bows(url, weapon_type):
-    columns = ["charge_stage", "coatings", "slots", "rank", "price", "creation_mats", "upgrade_mats", "description"]
+    columns = ["charge_stage", "coatings", "slots", "rank", "price", "creation_mats", "upgrade_mats"]
     return scrape_weapons(url, weapon_type, columns)

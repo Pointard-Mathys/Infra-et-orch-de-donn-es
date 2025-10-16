@@ -21,10 +21,10 @@ def create_consumer():
                 enable_auto_commit=True,
                 value_deserializer=lambda m: json.loads(m.decode('utf-8'))
             )
-            print("⏳ Consumer connecté à Kafka...")
+            print("Consumer connecté à Kafka...")
             return consumer
         except Exception as e:
-            print("⚠️ Erreur Kafka, nouvelle tentative dans 5s :", e)
+            print("Erreur Kafka, nouvelle tentative dans 5s :", e)
             time.sleep(5)
 
 consumer = create_consumer()
@@ -47,9 +47,9 @@ try:
         password=PG_PASSWORD
     )
     cursor = conn.cursor()
-    print("✅ Connexion PostgreSQL OK")
+    print("Connexion PostgreSQL OK")
 except Exception as e:
-    print("❌ Erreur de connexion PostgreSQL :", e)
+    print("Erreur de connexion PostgreSQL :", e)
     sys.exit(1)
 
 # ================================
@@ -70,8 +70,7 @@ try:
         rank TEXT,
         price TEXT,
         creation_mats TEXT,
-        upgrade_mats TEXT,
-        description TEXT
+        upgrade_mats TEXT
     )
     """)
     conn.commit()
@@ -97,20 +96,20 @@ try:
                 vals = [[record.get(k) for k in keys] for record in batch]
                 execute_batch(
                     cursor,
-                    f"INSERT INTO weapons ({cols}) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    f"INSERT INTO weapons ({cols}) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     vals
                 )
                 conn.commit()
-                print(f"📦 {len(batch)} lignes insérées dans PostgreSQL")
+                print(f"{len(batch)} lignes insérées dans PostgreSQL")
                 batch = []
 
         except Exception as e:
-            print("⚠️ Erreur insertion batch :", e)
+            print("Erreur insertion batch :", e)
             conn.rollback()
             batch = []
 
 except KeyboardInterrupt:
-    print("\n⚠️ Interruption utilisateur")
+    print("\nInterruption utilisateur")
 
 finally:
     if batch:
@@ -120,16 +119,16 @@ finally:
             vals = [[record.get(k) for k in keys] for record in batch]
             execute_batch(
                 cursor,
-                f"INSERT INTO weapons ({cols}) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                f"INSERT INTO weapons ({cols}) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 vals
             )
             conn.commit()
-            print(f"📦 {len(batch)} lignes insérées dans PostgreSQL (reste)")
+            print(f"{len(batch)} lignes insérées dans PostgreSQL (reste)")
         except Exception as e:
-            print("❌ Erreur insertion finale :", e)
+            print("Erreur insertion finale :", e)
             conn.rollback()
 
     cursor.close()
     conn.close()
     consumer.close()
-    print("✅ Toutes les données ont été insérées et les connexions fermées !")
+    print("Toutes les données ont été insérées et les connexions fermées !")
