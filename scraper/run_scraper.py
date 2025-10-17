@@ -71,6 +71,8 @@ URLS = {
 # ================================
 # Connexion au broker Kafka
 # ================================
+
+
 def create_producer():
     while True:
         try:
@@ -84,6 +86,8 @@ def create_producer():
             print("Kafka non disponible, nouvelle tentative dans 3s...", e)
 
 producer = create_producer()
+
+
 
 # ================================
 # Configuration du chunk
@@ -131,6 +135,7 @@ def run_all_scrapers_parallel():
     futures = []
 
     with ThreadPoolExecutor(max_workers=4) as scrape_executor: 
+
         for weapon_name, urls in URLS.items():
             if weapon_name in ["Light_Bowgun", "Heavy_Bowgun"]:
                 scraper_func = gunner
