@@ -7,9 +7,9 @@ from threading import Lock
 
 
 
-# ================================
+
 # URLs centralisées
-# ================================
+
 URLS = {
     "Long_Sword": [
         "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/buki/tachi.htm",
@@ -68,9 +68,9 @@ URLS = {
 
 
 
-# ================================
+
 # Connexion au broker Kafka
-# ================================
+
 
 
 def create_producer():
@@ -83,15 +83,13 @@ def create_producer():
             print("Connecté à Kafka")
             return producer
         except Exception as e:
-            print("Kafka non disponible, nouvelle tentative dans 3s...", e)
+            print("Kafka non disponible, nouvelle tentative...", e)
 
 producer = create_producer()
 
 
 
-# ================================
 # Configuration du chunk
-# ================================
 
 CHUNK_SIZE = 10000
 chunk_lock = Lock()  # Lock pour sécuriser l'accès au chunk global
@@ -108,9 +106,9 @@ def process_chunk_parallel(chunk_to_send):
 
 
 
-# ================================
+
 # Fonction de scraping thread-safe
-# ================================
+
 
 def scrape_and_chunk(scraper_func, url, weapon_name):
     global chunk
@@ -126,16 +124,14 @@ def scrape_and_chunk(scraper_func, url, weapon_name):
 
 
 
-# ================================
+
 # Fonction principale
-# ================================
+
 
 def run_all_scrapers_parallel():
     total_weapons = 0
     futures = []
-
     with ThreadPoolExecutor(max_workers=4) as scrape_executor: 
-
         for weapon_name, urls in URLS.items():
             if weapon_name in ["Light_Bowgun", "Heavy_Bowgun"]:
                 scraper_func = gunner
@@ -146,10 +142,8 @@ def run_all_scrapers_parallel():
 
             for url in urls:
                 futures.append(scrape_executor.submit(scrape_and_chunk, scraper_func, url, weapon_name))
-
         for future in as_completed(futures):
             total_weapons += len(future.result() or [])
-
     # Traiter le dernier chunk restant
     with chunk_lock:
         if chunk:
@@ -159,8 +153,8 @@ def run_all_scrapers_parallel():
     executor_kafka.shutdown(wait=True)
     print(f"\n✅ Total d’armes collectées : {total_weapons}")
 
-# ================================
+
 # Lancement
-# ================================
+
 if __name__ == "__main__":
     run_all_scrapers_parallel()

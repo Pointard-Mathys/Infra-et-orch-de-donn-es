@@ -5,9 +5,9 @@ from psycopg2.extras import execute_batch
 import time
 import sys
 
-# ================================
+
 # Config Kafka
-# ================================
+
 TOPIC = "jeux"
 BOOTSTRAP_SERVERS = 'kafka:9092'
 
@@ -29,9 +29,9 @@ def create_consumer():
 
 consumer = create_consumer()
 
-# ================================
+
 # Config PostgreSQL
-# ================================
+
 PG_HOST = 'postgres'
 PG_PORT = 5432
 PG_DB = 'postgresdb'
@@ -52,9 +52,9 @@ except Exception as e:
     print("Erreur de connexion PostgreSQL :", e)
     sys.exit(1)
 
-# ================================
+
 # Création table
-# ================================
+
 try:
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS weapons (
@@ -74,15 +74,15 @@ try:
     )
     """)
     conn.commit()
-    print("✅ Table PostgreSQL prête")
+    print(" Table PostgreSQL prête")
 except Exception as e:
-    print("❌ Erreur création table :", e)
+    print(" Erreur création table :", e)
     conn.rollback()
     sys.exit(1)
 
-# ================================
+
 # Lire depuis Kafka et insérer
-# ================================
+
 batch = []
 BATCH_SIZE = 500
 
