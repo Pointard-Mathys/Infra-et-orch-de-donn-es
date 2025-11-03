@@ -1,0 +1,32 @@
+---
+- name: Vérifier que Docker est installé
+  ansible.builtin.command: docker --version
+  register: docker_check
+  ignore_errors: true
+
+- name: Installer Docker si absent (Ubuntu/Debian)
+  ansible.builtin.shell: |
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+  when: docker_check.rc != 0
+
+- name: Vérifier que Docker Compose est installé
+  ansible.builtin.command: docker compose version
+  register: compose_check
+  ignore_errors: true
+
+- name: Installer Docker Compose si absent
+  ansible.builtin.shell: |
+    sudo apt-get install docker-compose-plugin -y
+  when: compose_check.rc != 0
+
+- name: Lancer les conteneurs avec docker-compose
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ playbook_dir }}/.."
+
+- name: Vérifier les conteneurs actifs
+  ansible.builtin.command: docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+  register: containers
+
+

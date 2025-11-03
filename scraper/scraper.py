@@ -2,9 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-# ================================
+
 # Fonction principale de scraping
-# ================================
+
 def scrape_weapons(url, weapon_type, columns_specific):
     """Scrape une page d'armes MHFZ et retourne une liste de dicts."""
     print(f"\n=== Scraping {weapon_type} ({url}) ===")
@@ -73,9 +73,8 @@ def scrape_weapons(url, weapon_type, columns_specific):
     return results
 
 
-# ================================
 # Fonctions pour chaque type d’arme
-# ================================
+
 def sword_master(url, weapon_type):
     columns = ["sharpness", "slots", "rank", "price", "creation_mats", "upgrade_mats"]
     return scrape_weapons(url, weapon_type, columns)

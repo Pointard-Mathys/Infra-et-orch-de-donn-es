@@ -1,0 +1,6 @@
+---
+- name: Déploiement local du projet Jeux avec Docker
+  hosts: local
+  become: true
+  roles:
+    - docker_setup
