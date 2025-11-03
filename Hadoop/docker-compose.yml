@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+
+  hadoop-namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-namenode
+    environment:
+      - CLUSTER_NAME=hadoop
+    ports:
+      - "9871:9870" # Web HDFS
+      - "11000:11001" # NameNode
+    volumes:
+      - hadoop_data:/hadoop/dfs
+    command: tail -f /dev/null
+
+  hadoop-datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-datanode
+    environment:
+      - CLUSTER_NAME=hadoop
+      - NAMENODE_URI=hdfs://hadoop-namenode:9000
+    depends_on:
+      - hadoop-namenode
+    volumes:
+      - hadoop_data:/hadoop/dfs
+    command: tail -f /dev/null
+
+volumes:
+  hadoop_data:

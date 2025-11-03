@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /Hadoop
+
+COPY . . 
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "export_postgres.py"]
