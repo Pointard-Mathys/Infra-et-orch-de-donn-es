@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -23,21 +25,6 @@ services:
       interval: 10s
       retries: 5
 
-
-
-  scraper:
-    build: ./scraper
-    container_name: scraper
-    depends_on:
-      - kafka
-    command: >
-      sh -c "
-      echo '⏳ Attente de Kafka...' &&
-      sleep 10 &&
-      python run_scraper.py
-      "
-
-
   postgres:
     image: postgres:16
     container_name: postgres
@@ -56,7 +43,17 @@ services:
       timeout: 5s
       retries: 5
 
-
+  scraper:
+    build: ./scraper
+    container_name: scraper
+    depends_on:
+      - kafka
+    command: >
+      sh -c "
+      echo '⏳ Attente de Kafka...' &&
+      sleep 10 &&
+      python run_scraper.py
+      "
 
   consumer:
     build: ./consumer
@@ -64,9 +61,7 @@ services:
     depends_on:
       - kafka
       - postgres
-
-
-
+      
 volumes:
   kafka_data:
   postgres_data:
