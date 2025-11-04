@@ -3,10 +3,15 @@ import json
 import psycopg2
 from psycopg2.extras import execute_batch
 
-# ================================
+
 # Config Kafka
+<<<<<<< HEAD
 # ================================
 TOPIC = "scraper-topic"
+=======
+
+TOPIC = "jeux"
+>>>>>>> bedeaab0c0db3f9725d882cc4ce26bf0e48ec3ef
 BOOTSTRAP_SERVERS = 'kafka:9092'
 
 consumer = KafkaConsumer(
@@ -19,10 +24,15 @@ consumer = KafkaConsumer(
 
 print("⏳ Consumer connecté à Kafka...")
 
-# ================================
+
 # Config PostgreSQL
+<<<<<<< HEAD
 # ================================
 PG_HOST = 'postgres'  # nom du container postgres dans docker-compose
+=======
+
+PG_HOST = 'postgres'
+>>>>>>> bedeaab0c0db3f9725d882cc4ce26bf0e48ec3ef
 PG_PORT = 5432
 PG_DB = 'postgresdb'
 PG_USER = 'postgresuser'
@@ -37,6 +47,7 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor()
 
+<<<<<<< HEAD
 # Crée la table si elle n'existe pas
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS weapons (
@@ -59,10 +70,39 @@ CREATE TABLE IF NOT EXISTS weapons (
 conn.commit()
 
 print("✅ PostgreSQL prêt")
+=======
 
-# ================================
+# Création table
+
+try:
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS weapons (
+        name TEXT,
+        disgrade TEXT,
+        upgrade TEXT,
+        rarity TEXT,
+        attack TEXT,
+        affinity TEXT,
+        element TEXT,
+        sharpness TEXT,
+        slots TEXT,
+        rank TEXT,
+        price TEXT,
+        creation_mats TEXT,
+        upgrade_mats TEXT
+    )
+    """)
+    conn.commit()
+    print(" Table PostgreSQL prête")
+except Exception as e:
+    print(" Erreur création table :", e)
+    conn.rollback()
+    sys.exit(1)
+>>>>>>> bedeaab0c0db3f9725d882cc4ce26bf0e48ec3ef
+
+
 # Lire depuis Kafka et insérer
-# ================================
+
 batch = []
 BATCH_SIZE = 500  # insère par lot pour gagner en performance
 
