@@ -1,11 +1,57 @@
+# ---
+# - name: Déployer application Docker
+#   hosts: localhost
+#   # become: true
+#   vars:
+#     repo_dest_kafka: "/home/mathys/Infra-et-orch-de-donn-es"
+#     repo_dest_hadoop: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop"
+
+#   tasks:
+#     - name: Build et up Docker Compose Kafka
+#       command: docker compose up -d --build
+#       args:
+#         chdir: "{{ repo_dest_kafka }}"
+
+#     - name: Build et up Docker Compose Hadoop
+#       command: docker compose up -d --build
+#       args:
+#         chdir: "{{ repo_dest_hadoop }}"
+
+
+
 ---
-- name: Déployer application Docker
+- name: Déploiement complet Big Data
   hosts: localhost
-  # become: true
   vars:
-    repo_dest: "/home/mathys/Infra-et-orch-de-donn-es"
+    repo_dest_kafka: "/home/mathys/Infra-et-orch-de-donn-es"
+    repo_dest_hadoop: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop"
+
   tasks:
-    - name: Build et up Docker Compose
+    - name: Ensure external Docker network infra exists
+      community.docker.docker_network:
+          name: infra-net
+          state: present
+         
+        
+    - name: Attendre 2 secondes pour que le réseau soit prêt
+      pause:
+        seconds: 2
+
+
+    - name: 🧱 Démarrer stack Kafka
       command: docker compose up -d --build
       args:
-        chdir: "{{ repo_dest }}"
+        chdir: "{{ repo_dest_kafka }}"
+
+    - name: ⏳ Attendre que PostgreSQL soit prêt
+      shell: |
+        until docker exec postgres pg_isready -U postgresuser -d postgresdb; do sleep 2; done
+      register: pg_ready
+      retries: 10
+      delay: 3
+      ignore_errors: true
+
+    - name: 🌐 Démarrer stack Hadoop
+      command: docker compose up -d --build
+      args:
+        chdir: "{{ repo_dest_hadoop }}"
