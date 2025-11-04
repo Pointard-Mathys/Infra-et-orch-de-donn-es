@@ -1,6 +1,11 @@
 ---
-- name: Déploiement local du projet Jeux avec Docker
-  hosts: local
-  become: true
-  roles:
-    - docker_setup
+- name: Déployer application Docker
+  hosts: localhost
+  # become: true
+  vars:
+    repo_dest: "/home/mathys/Infra-et-orch-de-donn-es"
+  tasks:
+    - name: Build et up Docker Compose
+      command: docker compose up -d --build
+      args:
+        chdir: "{{ repo_dest }}"
