@@ -65,3 +65,8 @@ services:
 volumes:
   kafka_data:
   postgres_data:
+
+
+networks:
+  infra-net:
+    external: true
