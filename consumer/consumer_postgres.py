@@ -58,19 +58,20 @@ except Exception as e:
 try:
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS weapons (
-        name TEXT,
-        disgrade TEXT,
-        upgrade TEXT,
-        rarity TEXT,
-        attack TEXT,
-        affinity TEXT,
-        element TEXT,
-        sharpness TEXT,
-        slots TEXT,
-        rank TEXT,
-        price TEXT,
-        creation_mats TEXT,
-        upgrade_mats TEXT
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    disgrade TEXT,
+    upgrade TEXT,
+    rarity TEXT,
+    attack TEXT,
+    affinity TEXT,
+    element TEXT,
+    sharpness TEXT,
+    slots TEXT,
+    rank TEXT,
+    price TEXT,
+    creation_mats TEXT,
+    upgrade_mats TEXT
     )
     """)
     conn.commit()

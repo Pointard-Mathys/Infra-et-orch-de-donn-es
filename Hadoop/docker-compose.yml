@@ -1,30 +1,50 @@
 services:
   hadoop-namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    # image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3.3.6
     container_name: hadoop-namenode
+    # hostname: hadoop-namenode
     environment:
       - CLUSTER_NAME=hadoop
+      - CORE_CONF_fs_defaultFS=hdfs://hadoop-namenode:9000
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+      - HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+      - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     ports:
       - "9871:9870"
       - "9000:9000"
     volumes:
       - hadoop_data:/hadoop/dfs/namenode
-    command: tail -f /dev/null
+    command: bash -c "/opt/hadoop-3.2.1/sbin/start-dfs.sh && tail -f /dev/null"
+    networks:
+      - infra-net
 
   hadoop-datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    # image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3.3.6
     container_name: hadoop-datanode
     environment:
       - CLUSTER_NAME=hadoop
       - NAMENODE_URI=hdfs://hadoop-namenode:9000
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+      - HDFS_DATANODE_USER=root
+      - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     depends_on:
       - hadoop-namenode
     volumes:
       - hadoop_data:/hadoop/dfs/datanode
     command: tail -f /dev/null
+    networks:
+      - infra-net
+
 
   data-exporter:       
-    build: .           
+    build: ./python-container           
     container_name: data-exporter
     depends_on:
       - hadoop-namenode
@@ -35,8 +55,26 @@ services:
       - POSTGRES_PASSWORD=postgrespassword
     volumes:
       - ./data:/Hadoop/data
+
+    # command: >
+    #   sh -c "
+    #     /hbase/bin/start-hbase.sh && \
+    #     /hbase/bin/hbase thrift start -p 9090
+    #   "
     networks:
       - infra-net
+
+  hbase:
+    image: harisekhon/hbase
+    container_name: hbase
+    environment:
+      HBASE_MANAGES_ZK: "true"
+    ports:
+      - "16010:16010"  
+      - "9090:9090"  
+    depends_on:
+      - hadoop-namenode
+
 
 volumes:
   hadoop_data:
@@ -44,3 +82,95 @@ volumes:
 networks:
   infra-net:
     external: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# services:
+#   hadoop-namenode:
+#     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+#     container_name: hadoop-namenode
+#     environment:
+#       - CLUSTER_NAME=hadoop
+#       - CORE_CONF_fs_defaultFS=hdfs://hadoop-namenode:9000
+#       - HDFS_CONF_dfs_webhdfs_enabled=true
+#       - HDFS_NAMENODE_USER=root
+#       - HDFS_DATANODE_USER=root
+#       - JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+#     ports:
+#       - "9870:9870"
+#       - "9000:9000"
+#     volumes:
+#       - hadoop_data:/hadoop/dfs/name
+#     command: bash -c "/opt/hadoop/sbin/start-dfs.sh && tail -f /dev/null"
+#     networks:
+#       - infra-net
+
+#   hadoop-datanode:
+#     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+#     container_name: hadoop-datanode
+#     environment:
+#       - NAMENODE_URI=hdfs://hadoop-namenode:9000
+#       - HDFS_DATANODE_USER=root
+#       - JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+#       - PATH=/usr/lib/jvm/java-1.8.0-openjdk/jre/bin:$PATH
+#     depends_on:
+#       - hadoop-namenode
+#     volumes:
+#       - hadoop_data:/hadoop/dfs/data
+#     command: bash -c "/opt/hadoop/sbin/hadoop-daemon.sh start datanode && tail -f /dev/null"
+#     networks:
+#       - infra-net
+
+#   hbase:
+#     image: harisekhon/hbase
+#     container_name: hbase
+#     environment:
+#       HBASE_MANAGES_ZK: "true"
+#     ports:
+#       - "16010:16010"  # HBase UI
+#       - "9090:9090"    # Thrift
+#     depends_on:
+#       - hadoop-namenode
+#     networks:
+#       - infra-net
+
+#   data-exporter:
+#     build: ./python-container
+#     container_name: data-exporter
+#     depends_on:
+#       - hadoop-namenode
+#       - hbase
+#     environment:
+#       - POSTGRES_HOST=postgres
+#       - POSTGRES_DB=postgresdb
+#       - POSTGRES_USER=postgresuser
+#       - POSTGRES_PASSWORD=postgrespassword
+#       - HADOOP_NAMENODE=http://hadoop-namenode:9870
+#       - HBASE_THRIFT_HOST=hbase
+#       - HBASE_THRIFT_PORT=9090
+#     volumes:
+#       - ./data:/Hadoop/data
+#     networks:
+#       - infra-net
+
+# volumes:
+#   hadoop_data:
+
+# networks:
+#   infra-net:
+#     external: true
