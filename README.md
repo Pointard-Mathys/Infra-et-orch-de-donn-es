@@ -1,4 +1,4 @@
-# Infra-et-orch-de-données MHFZ
+# Infra et orchestration de données MHFZ
 
 > Ce projet met en place une architecture data temps réel + big data pour collecter (scraping), transporter (Kafka), stocker (PostgreSQL) et traiter a grande échelle (Hadoop/Spark) les données du jeu Monster Hunter Frontier Z, puis les exposer pour analyse et data visualisation.
 
@@ -8,6 +8,7 @@
 - [Objectif du projet](#objectif-du-projet)
 - [Phase 1 : Pipeline minimal viable (MVP)](#phase-1--pipeline-minimal-viable-mvp)
 - [Phase 2 : Pipeline Big Data étendu](#phase-2--pipeline-big-data-étendu)
+- [Phase 3 : ...]()
 
 
 
@@ -16,10 +17,6 @@
 Mettre en place une infrastructure de traitement de données en continu à l’aide de Kafka et PostgreSQL, afin d’automatiser la collecte, la transmission et le stockage des données issues du site Monster Hunter Frontier Z (MHFZ).
 
 ---
-
-
-## Phase 1 : Pipeline minimal viable (MVP)
-
 <details>
   <summary><h2>Phase 1 : Pipeline minimal viable (MVP)</h2></summary>
 
