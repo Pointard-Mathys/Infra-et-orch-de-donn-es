@@ -1,22 +1,29 @@
 # Infra et orchestration de données MHFZ
 
-> Ce projet met en place une architecture data temps réel + big data pour collecter (scraping), transporter (Kafka), stocker (PostgreSQL) et traiter a grande échelle (Hadoop/Spark) les données du jeu Monster Hunter Frontier Z, puis les exposer pour analyse et data visualisation.
-
-
+> Ce projet met en place une architecture data temps réel + big data pour collecter (scraping), transporter (Kafka), stocker (PostgreSQL) et traiter à grande échelle (Hadoop/Spark) les données du jeu Monster Hunter Frontier Z, puis les exposer pour analyse et data visualisation.
 
 ## Sommaire
 - [Objectif du projet](#objectif-du-projet)
 - [Phase 1 : Pipeline minimal viable (MVP)](#phase-1--pipeline-minimal-viable-mvp)
 - [Phase 2 : Pipeline Big Data étendu](#phase-2--pipeline-big-data-étendu)
-- [Phase 3 : ...]()
-
-
 
 ## Objectif du projet
 
 Mettre en place une infrastructure de traitement de données en continu à l’aide de Kafka et PostgreSQL, afin d’automatiser la collecte, la transmission et le stockage des données issues du site Monster Hunter Frontier Z (MHFZ).
 
 ---
+
+### Architecture globale (vue macro)
+
+```mermaid
+flowchart LR
+    A[Scraper Python] -->|JSON| B[Kafka Broker]
+    B --> C[PostgreSQL]
+    C --> D[Hadoop / Spark]
+    D --> E[HBase]
+    E --> F[Data Viz / Dashboard]
+```
+
 <details>
   <summary><h2>Phase 1 : Pipeline minimal viable (MVP)</h2></summary>
 
@@ -43,101 +50,86 @@ Mettre en place une infrastructure de traitement de données en continu à l’a
 - Récupère les messages JSON et les insère dans PostgreSQL (une table par type d’arme).
 
 ### 4. Vérification de la persistance
-- Contrôle du nombre d’enregistrements :
-        SELECT COUNT(*) FROM long_sword;
-- Vérification des contenus :
-        SELECT name, rarity, attack, affinity FROM long_sword LIMIT 10;
+```bash
+# Contrôle du nombre d’enregistrements
+SELECT COUNT(*) FROM long_sword;
+
+# Vérification des contenus
+SELECT name, rarity, attack, affinity FROM long_sword LIMIT 10;
+```
 
 ### 5. Conteneurisation avec Docker Compose
-
 - Déploiement simple et reproductible.
 - Isolation des composants (Kafka, Scraper, PostgreSQL).
 - Automatisation complète du pipeline.
 
 ### 6. Instructions pour lancer le stack Phase 1
-
+```bash
 git clone <repo_url>
 cd <projet>
 docker compose up --build
 
-- Lancer Kafka.
-- Lancer le scraper Python (producteur).
-- Démarrer PostgreSQL.
-- Connecter tous les services sur un réseau Docker interne.
-
+# Lancer Kafka
+# Lancer le scraper Python (producteur)
+# Démarrer PostgreSQL
+# Connecter tous les services sur un réseau Docker interne
+```
 </details>
-
-
-## Phase 2 (Big Data) — version étendue (dans le bloc ci-dessous)
 
 <details>
   <summary><h2>Phase 2 : Pipeline Big Data étendu</h2></summary>
 
-Objectifs :
-
+### Objectifs :
 - Extraire les données depuis PostgreSQL.
 - Traiter à grande échelle via Hadoop MapReduce ou Spark.
 - Stocker les résultats dans HBase.
 - Automatiser l’infrastructure Big Data avec Ansible.
 
 ### 1. Extraction depuis PostgreSQL
-
-- Tables extraites automatiquement (long_sword, lance, bow, etc.).
-- Vérification de la persistance avant traitement :
-
+```bash
+# Tables extraites automatiquement
 SELECT COUNT(*) FROM postgresdb;
 SELECT * FROM postgresdb LIMIT 10;
+```
 
 ### 2. Choix du moteur Hadoop
-
 - Hadoop MapReduce : traitement batch distribué classique.
 - Spark : traitement en mémoire plus rapide pour analyses interactives.
-- Le choix dépend du volume et de la vitesse souhaitée.
 
-### 3. Traitement MapReduce 
-
+### 3. Traitement MapReduce
 - Mapper : transforme chaque fichier JSON en paires clé-valeur pour analyse.
 - Reducer : agrégation par type d’arme, rareté, attaque, affinité, etc.
 - Objectif : calculer des statistiques massives et fréquences sur les armes.
 
 ### 4. Stockage des résultats dans HBase
-
 - Accès rapide en lecture/écriture pour analyses futures.
 - Gestion efficace des gros volumes de données structurées/semi-structurées.
 - Historique complet des transformations.
 
 ### 5. Automatisation avec Ansible
-
 - Déploiement du cluster Hadoop et HBase.
 - Configuration des nodes et permissions.
 - Déploiement automatisé des jobs ETL / MapReduce.
 - Garantit fiabilité et reproductibilité.
 
 ### 6. Commandes d’exécution et de vérification Phase 2
-
-- Extraction et contrôle PostgreSQL
-
+```bash
+# Extraction et contrôle PostgreSQL
 psql -h <host> -U <user> -d <database>
 SELECT COUNT(*) FROM postgresdb;
 SELECT * FROM postgresdb LIMIT 10;
 
-- Lancer un job Hadoop MapReduce
-
+# Lancer un job Hadoop MapReduce
 hdfs dfs -put weapon_data.json /input/
 hadoop jar my_job.jar com.mhfz.analysis.WeaponStats /input /output
 
-- Vérifier les résultats HDFS / HBase
-
+# Vérifier les résultats HDFS / HBase
 hdfs dfs -ls /output/
 hdfs dfs -cat /output/part-00000
 hbase shell
 scan 'weapon_stats'
 
-- Automatisation Ansible
-
+# Automatisation Ansible
 ansible-playbook -i inventory/deploy_hosts.yml deploy_hadoop_hbase.yml
-
+```
 </details>
-
-
-
