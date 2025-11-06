@@ -1,39 +1,58 @@
 services:
+
+
+
   hadoop-namenode:
-    # image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-    image: apache/hadoop:3.3.6
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: hadoop-namenode
-    # hostname: hadoop-namenode
     environment:
       - CLUSTER_NAME=hadoop
       - CORE_CONF_fs_defaultFS=hdfs://hadoop-namenode:9000
       - HDFS_CONF_dfs_webhdfs_enabled=true
-      - HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
       - HDFS_NAMENODE_USER=root
       - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-      - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     ports:
-      - "9871:9870"
+      - "9870:9870"
       - "9000:9000"
     volumes:
-      - hadoop_data:/hadoop/dfs/namenode
-    command: bash -c "/opt/hadoop-3.2.1/sbin/start-dfs.sh && tail -f /dev/null"
-    networks:
-      - infra-net
+      - hadoop_data:/hadoop/dfs/name
+    command: bash -c "/opt/hadoop/sbin/start-dfs.sh && tail -f /dev/null"
+
+  # hadoop-namenode:
+  #   # image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+  #   image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+  #   container_name: hadoop-namenode
+  #   # hostname: hadoop-namenode
+  #   environment:
+  #     - CLUSTER_NAME=hadoop
+  #     - CORE_CONF_fs_defaultFS=hdfs://hadoop-namenode:9000
+  #     - HDFS_CONF_dfs_webhdfs_enabled=true
+  #     - HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
+  #     - HDFS_NAMENODE_USER=root
+  #     - HDFS_DATANODE_USER=root
+  #     - HDFS_SECONDARYNAMENODE_USER=root
+  #     - YARN_RESOURCEMANAGER_USER=root
+  #     - YARN_NODEMANAGER_USER=root
+  #     # - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  #   ports:
+  #     - "9871:9870"
+  #     - "9000:9000"
+  #   volumes:
+  #     - hadoop_data:/hadoop/dfs/namenode
+  #   command: bash -c "/opt/hadoop-3.2.1/sbin/start-dfs.sh && tail -f /dev/null"
+  #   networks:
+  #     - infra-net
 
   hadoop-datanode:
     # image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-    image: apache/hadoop:3.3.6
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: hadoop-datanode
     environment:
       - CLUSTER_NAME=hadoop
       - NAMENODE_URI=hdfs://hadoop-namenode:9000
       - HDFS_CONF_dfs_webhdfs_enabled=true
       - HDFS_DATANODE_USER=root
-      - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      # - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     depends_on:
       - hadoop-namenode
     volumes:
