@@ -6,6 +6,8 @@
 - [Objectif du projet](#objectif-du-projet)
 - [Phase 1 : Pipeline minimal viable (MVP)](#phase-1--pipeline-minimal-viable-mvp)
 - [Phase 2 : Pipeline Big Data étendu](#phase-2--pipeline-big-data-étendu)
+- [Phase 3 : Supervision & Monitoring du Pipeline Data](#phase-3--supervision--monitoring-du-pipeline-data)
+- [Architecture du projet](#Architecture-du-projet)
 
 ## Objectif du projet
 
@@ -133,3 +135,204 @@ scan 'weapon_stats'
 ansible-playbook -i inventory/deploy_hosts.yml deploy_hadoop_hbase.yml
 ```
 </details>
+
+<details>
+  <summary><h2>Phase 3 : Supervision & Monitoring du Pipeline Data</h2></summary>
+
+### Objectif global
+Mettre en place un système complet de supervision pour l’ensemble du pipeline Data développé lors des Phases 1 et 2.  
+L’objectif est de surveiller la **santé**, les **performances** et la **disponibilité** de tous les composants critiques :
+
+- Kafka / KRaft (ingestion temps réel)  
+- PostgreSQL, Hadoop, Spark (traitement & stockage intermédiaire)  
+- HBase ou Hive (stockage final Big Data)  
+- Conteneurs, services et processus déployés  
+- Ressources machines : CPU, RAM, disque, réseau  
+
+La stack minimale attendue comprend :  
+✔️ **Prometheus** pour la collecte de métriques  
+✔️ **Grafana** pour la visualisation (dashboards & alerting)
+
+---
+
+### 1. Mise en place de Prometheus (collecte de métriques)
+- Déployé via Docker ou service système selon l’environnement.
+- Rôle : interroger régulièrement des endpoints d’exporters, stocker les métriques dans une base TSDB interne.
+- Configuration principale (`prometheus.yml`) :
+  - Scrape de Kafka / KRaft via *JMX Exporter*
+  - Scrape de PostgreSQL via *postgres_exporter*
+  - Scrape des services Hadoop / Spark via *Node Exporter* ou exporters dédiés
+  - Scrape des conteneurs Docker via *cAdvisor*
+
+```yaml
+scrape_configs:
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:7071']
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+
+  - job_name: 'nodes'
+    static_configs:
+      - targets: ['node_exporter:9100']
+```
+
+---
+
+### 2. Exporters à mettre en place
+
+#### ✔ Kafka JMX Exporter
+- Permet d’exposer les métriques internes du broker Kafka / KRaft :
+  - taux de production & consommation
+  - lag des partitions
+  - cycles GC, heap JVM, threads
+
+#### ✔ PostgreSQL Exporter
+- Expose les métriques :
+  - connexions actives
+  - throughput en lecture/écriture
+  - temps de requêtes
+  - taille des tables
+
+#### ✔ Node Exporter
+- Expose les métriques system-level :
+  - CPU, RAM, DISK, IO, réseau
+  - parfait pour superviser les nodes Hadoop / Spark
+
+#### ✔ cAdvisor (optionnel mais recommandé)
+- Supervision des conteneurs Docker :
+  - CPU / mémoire / IO par container
+  - consommation réseau
+  - processus internes
+
+---
+
+### 3. Mise en place de Grafana (visualisation)
+Grafana se connecte à Prometheus via une datasource unique.
+
+Dashboards recommandés :
+- **Kafka Overview** (production, consommation, lag par consumer group)
+- **PostgreSQL Performance** (latence, locks, utilisation mémoire)
+- **Hadoop/Spark Cluster Health** (CPU des nœuds, tâches en cours, erreurs)
+- **HBase/Hive Metrics** (requêtes, temps de scan, saturation de régions)
+- **Infrastructure Dashboard** (CPU, RAM, disque, réseau)
+
+Commande de déploiement (Docker) :
+```bash
+docker run -d -p 3000:3000 grafana/grafana
+```
+
+Accès :
+- URL : http://localhost:3000  
+- identifiants par défaut : **admin / admin**
+
+---
+
+### 4. Mise en place d’un monitoring d’infrastructure
+Les métriques exposées par Node Exporter permettent de surveiller :
+
+- CPU (user, system, load average)
+- RAM (free, used, buffers/cache)
+- Inodes & disque
+- Bande passante réseau & saturation NIC
+- Processus en exécution
+
+Exemple d’alertes Prometheus recommandées :
+```yaml
+groups:
+- name: infra-alerts
+  rules:
+    - alert: HighCPUUsage
+      expr: avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) < 0.20
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        description: "CPU au-dessus de 80% depuis plus de 2 minutes"
+```
+
+---
+
+### 5. Dashboards indispensables
+
+#### Dashboard 1 → *Kafka Monitoring*
+Doit inclure :
+- taux de production / consommation
+- lag par topic
+- nombre de partitions offline
+- métriques JVM du broker
+
+#### Dashboard 2 → *PostgreSQL / Hadoop / Spark*
+- temps de requêtes PostgreSQL
+- tasks Spark exécutées / échouées
+- occupation HDFS / saturation datanodes
+
+#### Dashboard 3 → *Infrastructure globale*
+- CPU / RAM / DISK / réseau des machines
+- surveillance des conteneurs via cAdvisor
+
+---
+
+### 6. Commandes d’exécution & tests
+```bash
+# Vérifier que les endpoints répondent
+curl http://localhost:9090/metrics       # Prometheus
+curl http://localhost:9100/metrics       # Node Exporter
+curl http://localhost:9187/metrics       # PostgreSQL Exporter
+
+# Accès Grafana
+http://localhost:3000
+```
+
+---
+
+</details>
+
+## Architecture du projet
+
+```markdowmn
+INFRA-ET-ORCH
+├── README.md
+├── image.png
+├── docker-compose.yml (Global)
+├── scraper/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── run_scraper.py
+│   └── scraper.py
+├── venv/
+│   ├── Lib/
+│   ├── Scripts/
+│   └── pyvenv.cfg
+├── .vscode/
+│   └── settings.json
+├── ansible/
+│   ├── inventory.ini
+│   ├── playbook.yml
+│   └── roles/
+│       └── docker_setup/
+│           └── tasks/
+│               └── main.yml
+├── consumer/
+│   ├── consumer_postgres.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── Hadoop/
+│   ├── docker-compose.yml (Hadoop)
+│   ├── Dockerfile
+│   ├── export_postgres.py
+│   ├── insert_to_hbase.py
+│   ├── requirements.txt
+│   ├── run_hadoop_pipeline.py
+│   ├── processing/
+│   │   ├── mapper.py
+│   │   └── reducer.py
+│   └── data/
+│       └── metabase-data/
+└── kafka/
+    ├── Dockerfile
+    └── start-kraft.sh
+
+```
