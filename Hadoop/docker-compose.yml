@@ -90,6 +90,7 @@ services:
       - "9000:9000"
     volumes:
       - hadoop_data:/hadoop/dfs/namenode
+      - /home/mathys/Infra-et-orch-de-donn-es/Hadoop/data:/data
     # command: tail -f /dev/null
     networks:
       - infra-net
@@ -140,8 +141,10 @@ services:
       - POSTGRES_DB=postgresdb
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespassword
+
     volumes:
-      - ./data:/Hadoop/data
+      - /home/mathys/Infra-et-orch-de-donn-es/Hadoop/data:/data
+
     networks:
       - infra-net
 

@@ -72,8 +72,9 @@ RUN chmod +x /opt/hadoop/etc/hadoop/hadoop-env.sh
 COPY export_postgres.py .
 COPY run_hadoop_pipeline.py .
 COPY insert_to_hive.py .
-COPY processing/ processing/
+# COPY python-container/ python-container/
 COPY cronjob /etc/cron.d/data-export-cron
+COPY fake_pipeline.py .
 
 RUN chmod 0644 /etc/cron.d/data-export-cron && crontab /etc/cron.d/data-export-cron
 RUN touch /var/log/cron.log

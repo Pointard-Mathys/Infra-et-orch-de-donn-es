@@ -1,0 +1,9 @@
+pipeline_total_weapons 31
+pipeline_average_attack 4.428571428571429
+pipeline_weapon_count{element="element"} 1
+pipeline_weapon_count{element="Fire"} 7
+pipeline_weapon_count{element="Water"} 5
+pipeline_weapon_count{element="Ice"} 6
+pipeline_weapon_count{element="Thunder"} 4
+pipeline_weapon_count{element="Poison"} 4
+pipeline_weapon_count{element="Dragon"} 4

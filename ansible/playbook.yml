@@ -48,7 +48,6 @@
 
 
 
-
 ---
 - name: Déploiement complet Big Data avec Hive
   hosts: localhost
@@ -105,13 +104,39 @@
           if [ -f \$f ]; then chmod +x \$f; fi
         done || true"
       ignore_errors: yes
+
     # --- Lancer le pipeline Hadoop automatiquement si le script existe ---
     - name: ⚙️ Lancer job Hadoop avec run_hadoop_pipeline.sh
       command: docker exec {{ hadoop_container }} bash -c "[ -f /run_hadoop_pipeline.sh ] && /run_hadoop_pipeline.sh || echo 'run_hadoop_pipeline.sh absent, skipping'"
 
-    - name: ⚙️ Charger résultats dans Hive
-      command: python3 insert_to_hive.py
+    # --- ⚡ Exécuter le fake pipeline directement ---
+    - name: ⚡ Exécuter le pipeline fake MapReduce + Hive
+      command: python3 fake_pipeline.py
       args:
         chdir: "{{ repo_dest_scripts }}"
+      register: pipeline_output
+      ignore_errors: yes
+
+    - name: Afficher le résultat du pipeline fake
+      debug:
+        var: pipeline_output.stdout_lines
+
+    # --- Optionnel : exécuter insert_to_hive.py classique (peut être ignoré si fake suffisant) ---
+    # - name: ⚙️ Charger résultats dans Hive
+    #   command: python3 insert_to_hive.py
+    #   args:
+    #     chdir: "{{ repo_dest_scripts }}"
+    #   ignore_errors: yes
 
 
+
+    - name: 📈 Démarrer Prometheus + Grafana
+      command: docker compose up -d
+      args:
+        chdir: "{{ repo_dest_kafka }}/monitoring"
+
+
+    # - name: 📈 Démarrer Prometheus + Grafana
+    #   command: docker compose up -d --build
+    #   args:
+    #     chdir: "/home/mathys/Infra-et-orch-de-donn-es/monitoring"
