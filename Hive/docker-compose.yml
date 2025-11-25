@@ -1,0 +1,19 @@
+
+services:
+  hadoop-hive:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hadoop-hive
+    networks:
+      - infra-net
+    environment:
+      HIVE_METASTORE_USER: postgresuser
+      HIVE_METASTORE_PASSWORD: postgrespass
+      HIVE_METASTORE_DB: postgresdb
+      HIVE_METASTORE_HOST: postgres  # nom du conteneur PostgreSQL de Kafka
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+
+networks:
+  infra-net:
+    external: true

@@ -1,57 +1,117 @@
 # ---
-# - name: Déployer application Docker
+# - name: Déploiement Big Data séparé
 #   hosts: localhost
-#   # become: true
 #   vars:
 #     repo_dest_kafka: "/home/mathys/Infra-et-orch-de-donn-es"
 #     repo_dest_hadoop: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop"
+#     repo_dest_hive: "/home/mathys/Infra-et-orch-de-donn-es/Hive"
 
 #   tasks:
-#     - name: Build et up Docker Compose Kafka
+#     - name: Ensure Docker network exists
+#       community.docker.docker_network:
+#         name: infra-net
+#         state: present
+
+#     - name: 🧱 Démarrer stack Kafka
 #       command: docker compose up -d --build
 #       args:
 #         chdir: "{{ repo_dest_kafka }}"
 
-#     - name: Build et up Docker Compose Hadoop
+#     - name: 🧱 Démarrer stack Hadoop
 #       command: docker compose up -d --build
 #       args:
 #         chdir: "{{ repo_dest_hadoop }}"
 
+#     - name: ⏳ Attendre que HDFS soit prêt
+#       shell: |
+#         until docker exec hadoop-namenode hdfs dfs -ls /; do sleep 5; done
+#       retries: 20
+#       delay: 5
+
+#     - name: 🧱 Démarrer stack Hive
+#       command: docker compose up -d --build
+#       args:
+#         chdir: "{{ repo_dest_hive }}"
+
+#     - name: ⏳ Attendre que Hive soit prêt
+#       shell: |
+#         until docker exec hadoop-hive hive -e 'SHOW DATABASES;' >/dev/null 2>&1; do sleep 5; done
+#       retries: 20
+#       delay: 5
+
+#     - name: ✅ Vérification Hive
+#       shell: docker exec hadoop-hive hive -e 'SHOW DATABASES;'
+
+
+
+
+
+
 
 
 ---
-- name: Déploiement complet Big Data
+- name: Déploiement complet Big Data avec Hive
   hosts: localhost
   vars:
     repo_dest_kafka: "/home/mathys/Infra-et-orch-de-donn-es"
     repo_dest_hadoop: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop"
+    repo_dest_scripts: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop/python-container"
+    repo_dest_data: "/home/mathys/Infra-et-orch-de-donn-es/Hadoop/data"
+    hadoop_container: "hadoop-namenode"
 
   tasks:
-    - name: Ensure external Docker network infra exists
+    - name: Ensure Docker network infra-net exists
       community.docker.docker_network:
-          name: infra-net
-          state: present
-         
-        
-    - name: Attendre 2 secondes pour que le réseau soit prêt
-      pause:
-        seconds: 2
+        name: infra-net
+        state: present
 
-
-    - name: 🧱 Démarrer stack Kafka
+    - name: 🧱 Démarrer stack Kafka + PostgreSQL
       command: docker compose up -d --build
       args:
         chdir: "{{ repo_dest_kafka }}"
 
-    - name: ⏳ Attendre que PostgreSQL soit prêt
-      shell: |
-        until docker exec postgres pg_isready -U postgresuser -d postgresdb; do sleep 2; done
-      register: pg_ready
-      retries: 10
-      delay: 3
-      ignore_errors: true
-
-    - name: 🌐 Démarrer stack Hadoop
+    - name: 🌐 Démarrer stack Hadoop + Hive
       command: docker compose up -d --build
       args:
         chdir: "{{ repo_dest_hadoop }}"
+
+    - name: ⏳ Attendre que HDFS soit prêt
+      shell: |
+        until docker exec {{ hadoop_container }} hdfs dfs -ls / >/dev/null 2>&1; do sleep 5; done
+      retries: 20
+      delay: 5
+
+    # --- Copier Mapper, Reducer et CSV dans le conteneur si présents ---
+    - name: Copier mapper.py dans le conteneur Hadoop
+      command: docker cp {{ repo_dest_scripts }}/mapper.py {{ hadoop_container }}:/mapper.py
+      ignore_errors: yes
+
+    - name: Copier reducer.py dans le conteneur Hadoop
+      command: docker cp {{ repo_dest_scripts }}/reducer.py {{ hadoop_container }}:/reducer.py
+      ignore_errors: yes
+
+    - name: Copier weapons.csv dans le conteneur Hadoop
+      command: docker cp {{ repo_dest_data }}/weapons.csv {{ hadoop_container }}:/weapons.csv
+      ignore_errors: yes
+
+    - name: Copier run_hadoop_pipeline.sh dans le conteneur Hadoop
+      command: docker cp {{ repo_dest_scripts }}/run_hadoop_pipeline.sh {{ hadoop_container }}:/run_hadoop_pipeline.sh
+      ignore_errors: yes
+
+    - name: Donner les droits d'exécution aux scripts présents
+      command: >
+        docker exec {{ hadoop_container }} sh -c "
+        for f in /mapper.py /reducer.py /run_hadoop_pipeline.sh; do
+          if [ -f \$f ]; then chmod +x \$f; fi
+        done || true"
+      ignore_errors: yes
+    # --- Lancer le pipeline Hadoop automatiquement si le script existe ---
+    - name: ⚙️ Lancer job Hadoop avec run_hadoop_pipeline.sh
+      command: docker exec {{ hadoop_container }} bash -c "[ -f /run_hadoop_pipeline.sh ] && /run_hadoop_pipeline.sh || echo 'run_hadoop_pipeline.sh absent, skipping'"
+
+    - name: ⚙️ Charger résultats dans Hive
+      command: python3 insert_to_hive.py
+      args:
+        chdir: "{{ repo_dest_scripts }}"
+
+
