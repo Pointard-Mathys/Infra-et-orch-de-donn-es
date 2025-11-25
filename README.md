@@ -22,7 +22,7 @@ flowchart LR
     A[Scraper Python] -->|JSON| B[Kafka Broker]
     B --> C[PostgreSQL]
     C --> D[Hadoop / Spark]
-    D --> E[HBase]
+    D --> E[Hive]
     E --> F[Data Viz / Dashboard]
 ```
 
@@ -84,7 +84,7 @@ docker compose up --build
 ### Objectifs :
 - Extraire les données depuis PostgreSQL.
 - Traiter à grande échelle via Hadoop MapReduce ou Spark.
-- Stocker les résultats dans HBase.
+- Stocker les résultats dans Hive.
 - Automatiser l’infrastructure Big Data avec Ansible.
 
 ### 1. Extraction depuis PostgreSQL
@@ -103,13 +103,13 @@ SELECT * FROM postgresdb LIMIT 10;
 - Reducer : agrégation par type d’arme, rareté, attaque, affinité, etc.
 - Objectif : calculer des statistiques massives et fréquences sur les armes.
 
-### 4. Stockage des résultats dans HBase
+### 4. Stockage des résultats dans Hive
 - Accès rapide en lecture/écriture pour analyses futures.
 - Gestion efficace des gros volumes de données structurées/semi-structurées.
 - Historique complet des transformations.
 
 ### 5. Automatisation avec Ansible
-- Déploiement du cluster Hadoop et HBase.
+- Déploiement du cluster Hadoop et Hive.
 - Configuration des nodes et permissions.
 - Déploiement automatisé des jobs ETL / MapReduce.
 - Garantit fiabilité et reproductibilité.
@@ -125,14 +125,14 @@ SELECT * FROM postgresdb LIMIT 10;
 hdfs dfs -put weapon_data.json /input/
 hadoop jar my_job.jar com.mhfz.analysis.WeaponStats /input /output
 
-# Vérifier les résultats HDFS / HBase
+# Vérifier les résultats HDFS / Hive
 hdfs dfs -ls /output/
 hdfs dfs -cat /output/part-00000
-hbase shell
+Hive shell
 scan 'weapon_stats'
 
 # Automatisation Ansible
-ansible-playbook -i inventory/deploy_hosts.yml deploy_hadoop_hbase.yml
+ansible-playbook -i inventory/deploy_hosts.yml deploy_hadoop_Hive.yml
 ```
 </details>
 
@@ -145,7 +145,7 @@ L’objectif est de surveiller la **santé**, les **performances** et la **dispo
 
 - Kafka / KRaft (ingestion temps réel)  
 - PostgreSQL, Hadoop, Spark (traitement & stockage intermédiaire)  
-- HBase ou Hive (stockage final Big Data)  
+- Hive (stockage final Big Data)  
 - Conteneurs, services et processus déployés  
 - Ressources machines : CPU, RAM, disque, réseau  
 
@@ -216,7 +216,7 @@ Dashboards recommandés :
 - **Kafka Overview** (production, consommation, lag par consumer group)
 - **PostgreSQL Performance** (latence, locks, utilisation mémoire)
 - **Hadoop/Spark Cluster Health** (CPU des nœuds, tâches en cours, erreurs)
-- **HBase/Hive Metrics** (requêtes, temps de scan, saturation de régions)
+- **Hive** (requêtes, temps de scan, saturation de régions)
 - **Infrastructure Dashboard** (CPU, RAM, disque, réseau)
 
 Commande de déploiement (Docker) :
@@ -294,45 +294,59 @@ http://localhost:3000
 
 ```markdowmn
 INFRA-ET-ORCH
-├── README.md
-├── image.png
-├── docker-compose.yml (Global)
-├── scraper/
+[Répertoire Racine]
+├── .vscode/
+│   └── settings.json
+├── Ruché/
+│   └── docker-compose.yml (Application-specific)
+├── ansible/
+│   ├── inventory.ini
+│   └── playbook.yml
+├── consommateur/
+│   ├── Dockerfile
+│   ├── consumer_postgres.py
+│   └── requirements.txt
+├── Kafka/
+│   ├── Dockerfile
+│   └── start-kraft.sh
+├── grattoir/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── run_scraper.py
 │   └── scraper.py
 ├── venv/
-│   ├── Lib/
-│   ├── Scripts/
-│   └── pyvenv.cfg
-├── .vscode/
-│   └── settings.json
-├── ansible/
-│   ├── inventory.ini
-│   ├── playbook.yml
-│   └── roles/
-│       └── docker_setup/
-│           └── tasks/
-│               └── main.yml
-├── consumer/
-│   ├── consumer_postgres.py
-│   ├── Dockerfile
-│   └── requirements.txt
+│   ├── Lib/site-packages/
+│   │   └── pip-25.0.1.dist-info/
+│   │       ├── AUTHORS.txt
+│   │       ├── INSTALLER
+│   │       ├── LICENSE.txt
+│   │       ├── METADATA
+│   │       ├── RECORD
+│   │       ├── REQUESTED
+│   │       ├── WHEEL
+│   │       ├── entry_points.txt
+│   │       └── top_level.txt
+│   ├── pip/ (Dossier du venv)
+│   └── Scripts/ (Dossier du venv)
 ├── Hadoop/
-│   ├── docker-compose.yml (Hadoop)
-│   ├── Dockerfile
-│   ├── export_postgres.py
-│   ├── insert_to_hbase.py
-│   ├── requirements.txt
-│   ├── run_hadoop_pipeline.py
-│   ├── processing/
+│   ├── data/
+│   │   └── last_export.txt
+│   ├── python-container/
+│   │   ├── Dockerfile
+│   │   ├── crontab
+│   │   ├── export_postgres.py
+│   │   ├── hadoop-env.sh
+│   │   ├── insert_to_hive.py
 │   │   ├── mapper.py
-│   │   └── reducer.py
-│   └── data/
-│       └── metabase-data/
-└── kafka/
-    ├── Dockerfile
-    └── start-kraft.sh
+│   │   ├── reducer.py
+│   │   ├── requirements.txt
+│   │   ├── run_hadoop_pipeline.py
+│   │   └── run_hadoop_pipeline.sh
+│   └── docker-compose.yml
+├── pyvenv.cfg
+├── .gitignore
+├── README.md
+├── docker-compose.yml (Main project level)
+└── image.png
 
 ```
