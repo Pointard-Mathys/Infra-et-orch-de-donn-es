@@ -128,8 +128,8 @@ hadoop jar my_job.jar com.mhfz.analysis.WeaponStats /input /output
 # Vérifier les résultats HDFS / Hive
 hdfs dfs -ls /output/
 hdfs dfs -cat /output/part-00000
-Hive shell
-scan 'weapon_stats'
+hive
+SELECT * FROM weapon_stats LIMIT 10;
 
 # Automatisation Ansible
 ansible-playbook -i inventory/deploy_hosts.yml deploy_hadoop_Hive.yml
